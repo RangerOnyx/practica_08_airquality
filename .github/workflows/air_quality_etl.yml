@@ -1,0 +1,33 @@
+name: ETL Pipeline
+run-name: Daily ETL Pipeline Run
+env:
+  PYTHON_VERSION: "3.13"
+  AUTOMATION_USERNAME: "RangerOnyx"
+  AUTOMATION_EMAIL: "remolachacontenta@gmail.com"
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "21 7 * * *"
+permissions:
+  contents: write
+jobs:
+  run-etl-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: |
+          python -m pip install --upgrade pip
+          pip install -r src/requirements.txt
+      - env:
+          OPENAQ_KEY: ${{ secrets.OPENAQ_KEY }}
+        run: python src/pipeline.py
+      - run: head -n 10 data/air_data.csv
+      - run: |
+          git config --global user.name "$AUTOMATION_USERNAME"
+          git config --global user.email "$AUTOMATION_EMAIL"
+          git add data/.
+          git commit -am "ghactions:Updatedata$(date)"
+          git push
